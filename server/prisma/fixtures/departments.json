@@ -1,0 +1,10 @@
+[
+  { "id": "water", "name": "Water Department", "code": "WATER", "description": "Water supply and sewer services", "area": "Central", "capacity": 20, "isActive": true },
+  { "id": "roads", "name": "Roads Department", "code": "ROADS", "description": "Road maintenance and repairs", "area": "Central", "capacity": 30, "isActive": true },
+  { "id": "electricity", "name": "Electricity Department", "code": "ELECTRICITY", "description": "Power and electrical issues", "area": "North", "capacity": 25, "isActive": true },
+  { "id": "sanitation", "name": "Sanitation Department", "code": "SANITATION", "description": "Sanitation and sewer management", "area": "South", "capacity": 15, "isActive": true },
+  { "id": "garbage", "name": "Garbage & Waste", "code": "GARBAGE", "description": "Solid waste collection and disposal", "area": "West", "capacity": 40, "isActive": true },
+  { "id": "public-safety", "name": "Public Safety", "code": "PUBLIC_SAFETY", "description": "Police and public safety coordination", "area": "Central", "capacity": 50, "isActive": true },
+  { "id": "street-lights", "name": "Street Lighting", "code": "STREET_LIGHTS", "description": "Street lights and public lighting", "area": "East", "capacity": 12, "isActive": true },
+  { "id": "general-services", "name": "General Public Works", "code": "OTHER", "description": "General municipal services", "area": "Central", "capacity": 10, "isActive": true }
+]

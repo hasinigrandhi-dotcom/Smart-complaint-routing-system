@@ -1,0 +1,160 @@
+
+// Complete complaint routing database design
+//
+// This schema defines the persistent models used by SCRS. Comments here are
+// for documentation only; do not change the model definitions unless you
+// intend to migrate the database with Prisma migrations.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Roles for application users: regular users (citizens) and admins.
+enum UserRole {
+  USER
+  ADMIN
+}
+
+// ComplaintCategory: enumerated categories used to map complaints to
+// departments. The routing map in the application relates these enum values
+// to department aliases (see `complaintRouting.ts`).
+enum ComplaintCategory {
+  WATER_SUPPLY
+  ROADS
+  ELECTRICITY
+  SANITATION
+  GARBAGE
+  PUBLIC_SAFETY
+  STREET_LIGHTS
+  OTHER
+}
+
+// ComplaintStatus: lifecycle states for a complaint. These values are used
+// by frontend filters and backend queries; avoid renaming values without
+// updating code that depends on exact enum names.
+enum ComplaintStatus {
+  SUBMITTED
+  REVIEWING
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
+  ESCALATED
+}
+
+enum AssignmentReason {
+  AUTO_ROUTED
+  MANUAL_ASSIGNMENT
+  REASSIGNED
+}
+
+// User: represents both citizen users and admin users. Passwords are stored
+// hashed in `passwordHash`. The `role` determines admin privileges.
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  passwordHash  String
+  role          UserRole  @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  complaints    Complaint[]
+  assignments   ComplaintAssignment[]
+  statusHistory ComplaintStatusHistory[]
+}
+
+// Department: persistent representation of a municipal department. The
+// `code` field is unique and used by seed fixtures to identify demo
+// departments. Department vertices are loaded into the in-memory Department
+// Graph for routing demonstrations.
+model Department {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  code        String   @unique
+  description String?
+  area        String?
+  capacity    Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  complaints          Complaint[]               @relation("AssignedDepartmentComplaints")
+  complaintAssignments ComplaintAssignment[]
+}
+
+// Complaint: core citizen complaint model. Important fields:
+// - `category`: maps to `ComplaintCategory` and is used in routing
+// - `priorityScore`: numeric score computed at creation and used by the
+//   priority queue
+// - `assignedDepartmentId`: optional FK to the department assigned to handle
+//   the complaint
+model Complaint {
+  id                  String           @id @default(uuid())
+  title               String
+  description         String
+  category            ComplaintCategory
+  severity            Int              @default(1)
+  urgency             Int              @default(1)
+  status              ComplaintStatus  @default(SUBMITTED)
+  priorityScore       Float            @default(0)
+  location            String?
+  area                String?
+  isEscalated         Boolean          @default(false)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  resolvedAt          DateTime?
+
+  userId              String
+  user                User             @relation(fields: [userId], references: [id])
+
+  assignedDepartmentId String?
+  assignedDepartment   Department?      @relation("AssignedDepartmentComplaints", fields: [assignedDepartmentId], references: [id])
+
+  assignments         ComplaintAssignment[]
+  statusHistory       ComplaintStatusHistory[]
+
+  @@index([status])
+  @@index([category])
+  @@index([priorityScore])
+  @@index([assignedDepartmentId])
+}
+
+// ComplaintAssignment: represents an assignment of a complaint to a
+// department (and optionally to a user who assigned it). The `reason` field
+// indicates whether the assignment was auto-routed or manual.
+model ComplaintAssignment {
+  id           String           @id @default(uuid())
+  complaintId  String
+  complaint    Complaint        @relation(fields: [complaintId], references: [id])
+  departmentId String
+  department   Department       @relation(fields: [departmentId], references: [id])
+  assignedById String?
+  assignedBy   User?            @relation(fields: [assignedById], references: [id])
+  reason       AssignmentReason
+  assignedAt   DateTime         @default(now())
+  isActive     Boolean          @default(true)
+
+  @@index([complaintId])
+  @@index([departmentId])
+}
+
+// ComplaintStatusHistory: records state transitions for auditing and demo
+// playback (who changed a complaint's status and when).
+model ComplaintStatusHistory {
+  id          String          @id @default(uuid())
+  complaintId String
+  complaint   Complaint       @relation(fields: [complaintId], references: [id])
+  fromStatus  ComplaintStatus?
+  toStatus    ComplaintStatus
+  changedById String?
+  changedBy   User?           @relation(fields: [changedById], references: [id])
+  note        String?
+  createdAt   DateTime        @default(now())
+
+  @@index([complaintId])
+}
