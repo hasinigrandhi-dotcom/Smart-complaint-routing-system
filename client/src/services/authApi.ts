@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:4000/api';
+const API_BASE_URL = 'https://smart-complaint-routing-system-g0dm.onrender.com/api';
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
